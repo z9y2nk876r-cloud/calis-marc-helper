@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CALIS MARC 草稿生成器</title>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; max-width: 860px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #222; }
+    h1 { font-size: 22px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+    fieldset { border: 1px solid #ccc; border-radius: 6px; margin: 18px 0; padding: 12px 16px; }
+    legend { font-weight: 600; padding: 0 6px; }
+    label { display: block; margin: 8px 0 3px; font-size: 14px; }
+    input[type="text"] { width: 100%; padding: 8px; border: 1px solid #bbb; border-radius: 4px; font-size: 15px; box-sizing: border-box; }
+    .hint { font-size: 12px; color: #777; margin-top: 2px; }
+    button { margin-top: 18px; padding: 10px 26px; font-size: 16px; background: #222; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #444; }
+    #output-area { margin-top: 24px; }
+    #marc-output { width: 100%; min-height: 220px; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; padding: 12px; border: 1px solid #bbb; border-radius: 5px; background: #fafafa; box-sizing: border-box; }
+    .status { font-size: 13px; color: #555; margin-top: 6px; }
+    .error { color: #b00020; }
+  </style>
+</head>
+<body>
+
+<h1>CALIS MARC 草稿生成器</h1>
+<p class="hint">按题名页和版权页填写。生成后请人工核对字段与空格规则，再复制使用。</p>
+
+<form id="marc-form">
+
+  <fieldset>
+    <legend>题名与责任说明（200 / 7XX）</legend>
+
+    <label>正题名 <span style="color:#b00020">*</span></label>
+    <input type="text" name="title" required placeholder="例：图书馆学概论">
+    <div class="hint">题名页上最完整的正题名。正题名中含“/”时用半角录入，不加空格。</div>
+
+    <label>副题名（其他题名信息）</label>
+    <input type="text" name="subtitle" placeholder="例：数字时代的理论与实践">
+    <div class="hint">对应 200 $e。没有则留空。</div>
+
+    <label>第一责任者 <span style="color:#b00020">*</span></label>
+    <input type="text" name="author1" required placeholder="例：张三著">
+    <div class="hint">照题名页责任说明客观著录，保留“著/编/译”等字样。对应 200 $f，并生成 701（个人）或 711（团体）检索点。</div>
+
+    <label>其他责任者（用中文分号“；”隔开，最多再填两个）</label>
+    <input type="text" name="authors_other" placeholder="例：李四编；王五译">
+    <div class="hint">对应 200 $g，并生成 702/712。超过两个时，其余请在 304 附注中说明。</div>
+
+    <label>304 附注（责任者省略说明，可选）</label>
+    <input type="text" name="note_resp" placeholder="例：其余责任者：赵六等">
+    <div class="hint">当 200 $f/$g 省略了责任者时，在此说明。无省略则留空。</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>出版发行（210）</legend>
+
+    <label>出版地 <span style="color:#b00020">*</span></label>
+    <input type="text" name="place" required placeholder="例：北京">
+
+    <label>出版者 <span style="color:#b00020">*</span></label>
+    <input type="text" name="publisher" required placeholder="例：某某出版社">
+
+    <label>出版年 <span style="color:#b00020">*</span></label>
+    <input type="text" name="year" required placeholder="例：2024">
+    <div class="hint">一律用阿拉伯数字。非公元纪年照录，并在方括号中附公元年。</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>载体形态（215）</legend>
+
+    <label>页数 / 册数 <span style="color:#b00020">*</span></label>
+    <input type="text" name="pages" required placeholder="例：320页 或 3册">
+
+    <label>尺寸</label>
+    <input type="text" name="size" placeholder="例：24cm">
+  </fieldset>
+
+  <fieldset>
+    <legend>ISBN 与价格（010）</legend>
+
+    <label>ISBN</label>
+    <input type="text" name="isbn" placeholder="例：978-7-XXXX-XXXX-X">
+    <div class="hint">去掉连字符后录入 $a，连字符不影响生成。</div>
+
+    <label>价格</label>
+    <input type="text" name="price" placeholder="例：CNY68.00">
+  </fieldset>
+
+  <fieldset>
+    <legend>丛编（225 / 410）</legend>
+
+    <label>丛编名</label>
+    <input type="text" name="series" placeholder="例：某某学术丛书">
+    <div class="hint">有丛编名时，225 和 410 会成对生成。410 使用 CALIS 的 $1 嵌入字段格式。</div>
+
+    <label>丛编卷标识</label>
+    <input type="text" name="series_volume" placeholder="例：第3辑 或 4">
+    <div class="hint">对应 225 $v 和 410 $1 中的 $v。</div>
+  </fieldset>
+
+  <fieldset>
+    <legend>本地字段（905，可选）</legend>
+
+    <label>馆藏代码</label>
+    <input type="text" name="holding_code" placeholder="例：你的馆代码">
+
+    <label>索书号</label>
+    <input type="text" name="call_number" placeholder="例：G250/1234">
+  </fieldset>
+
+  <button type="submit">生成 MARC 草稿</button>
+  <div class="status" id="status"></div>
+</form>
+
+<div id="output-area" style="display:none;">
+  <h2 style="font-size:17px;">生成结果（人工核对后复制）</h2>
+  <textarea id="marc-output" readonly></textarea>
+</div>
+
+<script>
+document.getElementById('marc-form').addEventListener('submit', async function (event) {
+  event.preventDefault();
+  const statusEl = document.getElementById('status');
+  const outputArea = document.getElementById('output-area');
+  const outputEl = document.getElementById('marc-output');
+
+  statusEl.textContent = '正在生成…';
+  statusEl.className = 'status';
+
+  const formData = new FormData(event.target);
+  const payload = Object.fromEntries(formData.entries());
+
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || '生成失败');
+    }
+
+    const result = await response.json();
+    outputEl.value = result.marc;
+    outputArea.style.display = 'block';
+    statusEl.textContent = '已生成。请逐字段核对。';
+    statusEl.className = 'status';
+  } catch (error) {
+    statusEl.textContent = '出错：' + error.message;
+    statusEl.className = 'status error';
+  }
+});
+</script>
+
+</body>
+</html>
